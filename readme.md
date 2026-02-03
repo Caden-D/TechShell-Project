@@ -1,6 +1,6 @@
 ## Group members
-* Caden Duhon
-* Zachary Smith
+- Caden Duhon
+- Zachary Smith
 
 ## Responcibilities
 
