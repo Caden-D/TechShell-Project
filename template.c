@@ -8,7 +8,7 @@
 
 /* 
     A function that causes the prompt to 
-    display in the terminal
+    display in the terminal boooom
 */
 
 /*
