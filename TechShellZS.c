@@ -5,25 +5,30 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
-#define SIZE 256
+#define MAX_SIZE 256
 #define DEBUG 0
 
-void tokenize(char input[], char *argv[]);
+void tokenize(char input[], char *args[]);
 
 int main(void){
 
-    char wd[SIZE];
+    char wd[MAX_SIZE];
     char *wdpointer;
-    char input[SIZE];
-    char *argv[SIZE];
+    char input[MAX_SIZE];
+    char *args[MAX_SIZE];
 
-	// Get the input
+	// Main loop
 	for (;;)
 	{
         // get the working directory and display the prompt
         wdpointer = getcwd(wd, sizeof(wd));
-        printf("%s$ ", wd);
+        if (wdpointer == NULL){
+            perror("getcwd");
+            continue;
+        }
+        printf("%s $ ", wd);
 
         // get user input
         fgets(input, sizeof(input), stdin);
@@ -32,28 +37,39 @@ int main(void){
         input[strcspn(input, "\n")] = '\0';
 
         //tokenize it 
-        tokenize(input, argv);
+        tokenize(input, args);
 
         // If someone just pressed enter, then just restart the loop
-        if (argv[0] == NULL){
-            continue;
+        if (strcmp(args[0], NULL) == 0) continue;       
+
+        // custom cd 
+        if (strcmp(args[0], "cd") == 0){
+            if (args[1] == NULL){
+                fprintf(stderr, "cd: missing argument\n");
+            }
+            else {
+                if (chdir(args[1] != 0)){
+                    perror("cd");
+                }
+            }
         }
+        continue;
 	    
 	}
 
 	exit(0);
 }
 
-void tokenize(char input[], char *argv[]){
+void tokenize(char input[], char *args[]){
     int i = 0;
     //basic tokenize that only separates based on spaces
     char *token = strtok(input, " ");
     while (token != NULL){
-        argv[i] = token;
+        args[i] = token;
         i++;
         token = strtok(NULL, " ");
     }
 
     // must set the last value of argv to NULL so that execvp knows where to stop
-    argv[i] = NULL;
+    args[i] = NULL;
 }
