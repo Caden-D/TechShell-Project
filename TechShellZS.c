@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define MAX_SIZE 256
 #define DEBUG 0
@@ -40,7 +42,7 @@ int main(void){
         tokenize(input, args);
 
         // If someone just pressed enter, then just restart the loop
-        if (strcmp(args[0], NULL) == 0) continue;       
+        if (args[0] == 0) continue;       
 
         // custom cd 
         if (strcmp(args[0], "cd") == 0){
@@ -52,8 +54,29 @@ int main(void){
                     perror("cd");
                 }
             }
+            continue;
         }
-        continue;
+        
+        // fork() and execvp()
+
+        pid_t pid = fork();
+
+        if (pid < 0){
+            perror("fork");
+            continue;
+        }
+
+        if (pid == 0){
+            // Child Process
+            execvp(args[0], args);
+            // if there is an error
+            perror("execvp");
+            return 1;
+        }
+        else {
+            // Parent Process
+            wait(NULL);
+        }
 	    
 	}
 
