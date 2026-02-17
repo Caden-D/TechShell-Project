@@ -8,11 +8,13 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #define MAX_SIZE 256
-#define DEBUG 0
 
 void tokenize(char input[], char *args[]);
+
+void handle_cd(char args[]);
 
 int main(void){
 
@@ -44,7 +46,7 @@ int main(void){
         // If someone just pressed enter, then just restart the loop
         if (args[0] == 0) continue;       
 
-        // custom cd 
+        // check for cd
         if (strcmp(args[0], "cd") == 0){
             if (args[1] == NULL){
                 fprintf(stderr, "cd: missing argument\n");
@@ -55,6 +57,23 @@ int main(void){
                 }
             }
             continue;
+        }
+
+        // scan for redirects
+        char *input_file = NULL;
+        char *output_file = NULL;
+
+        for (int i = 0; args[i] != NULL; i++){
+            
+            if (strcmp(args[i], "<") == 0){
+                input_file = args[i+1];
+                args[i] = NULL;
+            }
+
+            if (strcmp(args[i], ">") == 0){
+                output_file = args[i+1];
+                args[i] = NULL;
+            }
         }
         
         // fork() and execvp()
@@ -67,6 +86,19 @@ int main(void){
         }
 
         if (pid == 0){
+
+            // Handle redirects
+            if (input_file != NULL){
+                int fd = open(input_file, O_RDONLY);
+                dup2(fd, STDIN_FILENO);
+                close(fd);
+            }
+            if (output_file != NULL){
+                int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                dup2(fd, STDOUT_FILENO);
+                close(fd);
+            }
+
             // Child Process
             execvp(args[0], args);
             // if there is an error
@@ -96,3 +128,4 @@ void tokenize(char input[], char *args[]){
     // must set the last value of argv to NULL so that execvp knows where to stop
     args[i] = NULL;
 }
+
