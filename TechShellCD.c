@@ -5,25 +5,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 #define SIZE 50
 
-//////// Some function ideas: ////////////
-// Note: Some code is reflected in main that represents these functions,
-// but it is up to you to determine how you want to organize your code.
 
-/* 
-    A function that causes the prompt to display in the terminal
-    This function only consists of two lines, so it is consolidated into the main loop
-*/
-
-
-/*
-    A function that takes input from the user.
-    It may return return the input to the calling statement or 
-    store it at some memory location using a pointer.
-    This function is also consolidated into the main loop.
-*/ 
 
 /*
     A function that parses through the user input.
@@ -64,13 +53,14 @@
         That is, there symbols: > and <. 
         Pipe isn't required but could be a nice addition.
 */
-
+void tokenize(char input[], char *args[]);
 
 int main(){ // MAIN
 
     char wd[SIZE];
     char *wdpointer;
     char input[SIZE];
+    char *command[SIZE];
 
 	//char* input;
 	//struct ShellCommand command;
@@ -87,12 +77,92 @@ int main(){ // MAIN
 	    
         // begin parcing the user input into a usible state
         input[strcspn(input, "\n")] = '\0';
+        tokenize(input, command);
 
-        //token = strtok(input, " ");
-	    
-	    // execute the command
-	    //executeCommand(command);
+        if (command[0] == NULL) {
+            continue;
+        }
+
+        // test edge case with using \ to escape a space in a file name
+
+        // cd command
+        if (strcmp(command[0], "cd") == 0){
+            if (command[1] == NULL){
+                printf("cd command expects a directory or '..' as an argument\n");
+                continue;
+            } else {
+                if(chdir(command[1]) != 0){
+                    perror("cd");
+                }
+                continue;
+            }
+        }
+	
+	    // fork and execute
+        pid_t pid = fork();
+
+        if(pid < 0){
+            // error occured
+            perror("fork");
+        } else if (pid == 0){
+            // child
+            // check for < or >
+            for (int i = 0; command[i] != NULL; i++){
+
+                // apply >
+                if (strcmp(command[i], ">") == 0){
+                    int fd = open(command[i+1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                    if (fd < 0) {
+                        perror("open");
+                        exit(1);
+                    }
+                    dup2(fd, STDOUT_FILENO);
+                    close(fd);
+
+                    command[i] = NULL;
+                    command[i+1] = NULL;
+                }
+
+                // apply <
+                if (strcmp(command[i], "<") == 0){
+                    int fd = open(command[i+1], O_RDONLY);
+                    if (fd < 0) {
+                        perror("open");
+                        exit(1);
+                    }
+                    dup2(fd, STDIN_FILENO);
+                    close(fd);
+
+                    command[i] = NULL;
+                    command[i+1] = NULL;
+                }
+            }
+
+            execvp(command[0], command);
+            perror("exec");
+            exit(1);
+
+
+        } else {
+            // parent
+            wait(NULL);
+        }
 	}
 
 	exit(0);
+}
+
+// borrowed from Zachary
+void tokenize(char input[], char *args[]){
+    int i = 0;
+    //basic tokenize that only separates based on spaces
+    char *token = strtok(input, " ");
+    while (token != NULL){
+        args[i] = token;
+        i++;
+        token = strtok(NULL, " ");
+    }
+
+    // must set the last value of argv to NULL so that execvp knows where to stop
+    args[i] = NULL;
 }
