@@ -53,6 +53,7 @@
         That is, there symbols: > and <. 
         Pipe isn't required but could be a nice addition.
 */
+void ZCtokenize(char input[], char *args[]);
 void tokenize(char input[], char *args[]);
 
 int main(){ // MAIN
@@ -79,11 +80,10 @@ int main(){ // MAIN
         input[strcspn(input, "\n")] = '\0';
         tokenize(input, command);
 
+        // special case for no command entered
         if (command[0] == NULL) {
             continue;
         }
-
-        // test edge case with using \ to escape a space in a file name
 
         // cd command
         if (strcmp(command[0], "cd") == 0){
@@ -153,7 +153,7 @@ int main(){ // MAIN
 }
 
 // borrowed from Zachary
-void tokenize(char input[], char *args[]){
+void ZStokenize(char input[], char *args[]){
     int i = 0;
     //basic tokenize that only separates based on spaces
     char *token = strtok(input, " ");
@@ -165,4 +165,41 @@ void tokenize(char input[], char *args[]){
 
     // must set the last value of argv to NULL so that execvp knows where to stop
     args[i] = NULL;
+}
+
+void tokenize(char input[], char *args[]){
+    int a = 0;                                      // index for args
+    int i = 0;                                      // index for input
+    int t = 0;                                      // index for current token
+
+    int inQuotes = 0;                               // used to remember if we are in a set of quotation marks
+    static char token[SIZE];                        // memory buffer to hold the token being worked on
+
+    while (input[i] != '\0'){                       // move through the input string char by char until reaching the string terminator
+
+        if (input[i] == '\\'){                      // case for "\"
+            i++;                                    // skip the "\"
+            if (input[i] != '\0'){                  // make sure we dont add the string terminator
+                token[t++] = input[i++];            // add the next character litterally
+            }
+        } else if (input[i] == '"'){                // case for '"'
+            inQuotes = !inQuotes;                   // toggle the flag
+            i++;                                    // keep moving
+        } else if (input[i] == ' ' && !inQuotes) {  // handle spaces like normal if not in quotes
+            if (t > 0) {                            // check of token in empty
+                token[t] = '\0';                    // add a string terminator to the end of the buffer
+                args[a++] = strdup(token);          // copy the token into the args list
+                t = 0;                              // reset the index for the token
+            }
+            i++;
+        } else {                                    // normal case for all other characters
+            token[t++] = input[i++];
+        }
+    }
+        if (t > 0) {                                // copy the final token (tokens are copied on hiting a space char)
+            token[t] = '\0';
+            args[a++] = strdup(token);
+        }
+        args[i] == NULL;                            // add a NULL to the end of the args list for the execvp function
+
 }
