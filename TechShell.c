@@ -10,7 +10,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
-#define MAX_SIZE 256
+#define SIZE 256
 
 void tokenize(char input[], char *args[]);
 
@@ -63,23 +63,6 @@ int main(void){
             continue;
         }
 
-        char *input_file = NULL;        // stores the file name if stdin
-        char *output_file = NULL;       // stores the file name if stdout
-
-        for (int i = 0; args[i] != NULL; i++){ // checks for stdin or stdout
-            
-            if (strcmp(args[i], "<") == 0){
-                input_file = args[i+1];
-                args[i] = NULL;
-            }
-
-            if (strcmp(args[i], ">") == 0){
-                output_file = args[i+1];
-                args[i] = NULL;
-            }
-        }
-
-
 
         // step 4: fork and execute
 
@@ -92,18 +75,36 @@ int main(void){
 
         if (pid == 0){
 
-            if (input_file != NULL){            // handle input redirect
-                int fd = open(input_file, O_RDONLY);
-                dup2(fd, STDIN_FILENO);
-                close(fd);
-            }
-            if (output_file != NULL){           // handle output redirect
-                int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                dup2(fd, STDOUT_FILENO);
-                close(fd);
+            for (int i = 0; command[i] != NULL; i++){           // check for a redirect
+
+                if (strcmp(command[i], ">") == 0){              // if > detected
+                    int fd = open(command[i+1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                    if (fd < 0) {
+                        perror("open");
+                        exit(1);
+                    }
+                    dup2(fd, STDOUT_FILENO);                    // run dup2 to change the output file descriptor
+                    close(fd);
+
+                    command[i] = NULL;
+                    break;
+                }
+
+                if (strcmp(command[i], "<") == 0){              // if < detected
+                    int fd = open(command[i+1], O_RDONLY);
+                    if (fd < 0) {
+                        perror("open");
+                        exit(1);
+                    }
+                    dup2(fd, STDIN_FILENO);                     // run dup2 to change the input file descriptor
+                    close(fd);
+
+                    command[i] = NULL;
+                    break;
+                }
             }
 
-            execvp(args[0], args);              // execute the command
+            execvp(command[0], command);              // execute the command
             perror("execvp");
             exit(1);
         }
