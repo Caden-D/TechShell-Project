@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include <ctype.h>
 
 #define SIZE 50
 
@@ -114,6 +113,9 @@ int main(){ // MAIN
         } else {
             // parent
             wait(NULL);
+            for (int i = 0; command[i] != NULL; i++) {
+                free(command[i]);
+            }
         }
 	}
 
