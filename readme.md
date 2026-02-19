@@ -4,7 +4,7 @@
 
 ## Responsibilities
 
-We didn't really split up responsibilites like in a 'traditional' group project and instead opted to work on our own separate versions and then merge them at the end to get the best result. This also resulted in both of us gaining a greater understanding of the project. For example, The prompt system was made by Caden and improved By Zachary as well as the other way around for the tokenizer
+We didn't really split up responsibilites like in a 'traditional' group project and instead opted to work on our own separate versions and then merge them at the end to get the best result. This also resulted in both of us gaining a greater understanding of the project. For example, The prompt system was made by Caden and improved By Zachary as well as the other way around for the tokenizer.
 
 ## Description
 
