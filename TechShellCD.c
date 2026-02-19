@@ -9,50 +9,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #define SIZE 50
 
 
-
-/*
-    A function that parses through the user input.
-    Consider having this function return a struct that stores vital
-    information about the parsed instruction such as:
-    - The command itself
-    - The arguments that come after the command 
-        Hint: When formatting your data, 
-        look into execvp and how it takes in args.
-    - Information about if a redirect was detected such as >, <, or |
-    - Information about whether or not a new file 
-        needs to be created and what that filename may be.
-    
-
-    Some helpful functions when doing this come from string.h and stdlib.h, such as
-    strtok, strcmp, strcpy, calloc, malloc, realloc, free, and more
-
-    Be sure to consider/test for situations when a backslash is used to escape the space char
-    and when quotes are used to group together various tokens.
-*/
-
-/*
-    A function that executes the command. 
-    This function might take in a struct that represents the shell command.
-
-    Be sure to consider each of the following:
-    1. The execvp() function. 
-        This can execute commands that already exist, that is, 
-        you don't need to recreate the functionality of 
-        the commands on your computer, just the shell.
-        Keep in mind that execvp takes over the current process.
-    2. The fork() function. 
-        This can create a process for execvp to take over.
-    3. cd is not a command like ls and mkdir. 
-        cd is a toold provided by the shell, 
-        so you WILL need to recreate the functionality of cd.
-    4. Be sure to handle standard output redirect and standard input redirects here 
-        That is, there symbols: > and <. 
-        Pipe isn't required but could be a nice addition.
-*/
 void ZCtokenize(char input[], char *args[]);
 void tokenize(char input[], char *args[]);
 
@@ -78,6 +39,11 @@ int main(){ // MAIN
 	    
         // begin parcing the user input into a usible state
         input[strcspn(input, "\n")] = '\0';
+
+        // clean up the command list for future commands
+        for (int i = 0; i < SIZE; i++) {
+            command[i] = NULL;
+        }
         tokenize(input, command);
 
         // special case for no command entered
@@ -88,14 +54,16 @@ int main(){ // MAIN
         // cd command
         if (strcmp(command[0], "cd") == 0){
             if (command[1] == NULL){
-                printf("cd command expects a directory or '..' as an argument\n");
-                continue;
+                char *home = getenv("HOME");
+                if (home == NULL || chdir(home) != 0) {
+                perror("cd");
+                }
             } else {
                 if(chdir(command[1]) != 0){
                     perror("cd");
                 }
-                continue;
             }
+            continue;
         }
 	
 	    // fork and execute
@@ -120,7 +88,7 @@ int main(){ // MAIN
                     close(fd);
 
                     command[i] = NULL;
-                    command[i+1] = NULL;
+                    break;
                 }
 
                 // apply <
@@ -134,7 +102,7 @@ int main(){ // MAIN
                     close(fd);
 
                     command[i] = NULL;
-                    command[i+1] = NULL;
+                    break;
                 }
             }
 
@@ -200,6 +168,6 @@ void tokenize(char input[], char *args[]){
             token[t] = '\0';
             args[a++] = strdup(token);
         }
-        args[i] == NULL;                            // add a NULL to the end of the args list for the execvp function
+        args[a] = NULL;                            // add a NULL to the end of the args list for the execvp function
 
 }
